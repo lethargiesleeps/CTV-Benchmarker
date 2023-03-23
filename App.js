@@ -1,16 +1,28 @@
-import { StyleSheet, Text, SafeAreaView, View, StatusBar, Button, Alert} from "react-native";
+import {
+  StyleSheet,
+  Text,
+  SafeAreaView,
+  View,
+  StatusBar,
+  Button,
+  Alert,
+} from "react-native";
 import {useState, useEffect} from "react";
 import  Dropdown  from "./components/Dropdown";
 import * as BackgroundFetch from 'expo-background-fetch';
 import * as TaskManager from 'expo-task-manager';
+import { hocFetch, callApi} from "./Fetcher";
 
 //task name
 const BACKGROUND_FETCH_TASK = 'background-fetch';
+let intensityGlobal = 'Low';
 
 //task logic
 TaskManager.defineTask(BACKGROUND_FETCH_TASK, async () => {
   const now = Date.now();
-  console.log(`Got background fetch call at date: ${new Date(now).toISOString()}`);
+  console.log(`[ FETCH INITIATED: ${new Date(now).toString()} ]`);
+
+
   return BackgroundFetch.BackgroundFetchResult.NewData;
 });
 
@@ -57,6 +69,7 @@ export default function App() {
     if (backgroundFrequency !== undefined && intensity !== undefined) {
       //convert dropdown selection to numerical equivalent in minutes
       const interval = parseInterval(backgroundFrequency);
+
       //unregister task (stop it from running)
       if (isRegistered) {
         await unregisterBackgroundFetchAsync();
@@ -65,7 +78,7 @@ export default function App() {
       //register task (start the process)
       else {
         await registerBackgroundFetchAsync(interval);
-        console.log("[ BACKGROUND FETCH TASK IS NOW REGISTERED ]")
+        console.log("[ BACKGROUND FETCH TASK IS NOW REGISTERED ]");
       }
 
     }
@@ -79,8 +92,11 @@ export default function App() {
     checkStatusAsync();
   };
 
-    //frequency rate dropdown
-    const frequencyDropdown = <Dropdown
+  function doTheThing() {
+    callApi();
+  }
+  //frequency rate dropdown
+  const frequencyDropdown = <Dropdown
     items={
       [
         {'key': 1, 'value': '15 Minutes'},
@@ -105,7 +121,12 @@ export default function App() {
       ]
     }
     label={'Select Call Intensity'}
-    onValueChange={(intensityValue) => setIntensity(intensityValue)}
+    onValueChange={(intensityValue) => {
+      setIntensity(intensityValue);
+      intensityGlobal = intensityValue;
+      console.log(`[ INTENSITY GLOBAL CHECK : ${intensityGlobal}]`);
+    }
+  }
   />
 
   return (
@@ -132,9 +153,8 @@ export default function App() {
         <View style={styles.buttonContainer}>
           <Button 
             title={isRegistered ? 'Stop Background Fetch Task' : 'Start Background Fetch Task'} 
-            onPress={toggleFetchTask}
+            onPress={doTheThing}
             />
-          
         </View>
       </View>
     </SafeAreaView>
