@@ -1,52 +1,48 @@
 import axios from "axios";
 
 export function hocFetch(intensity) {
+    let returnValue = `[ ${new Date(Date.now()).toString()} ][ FETCH IN PROGRESS ]`;
+    let results;
     switch (intensity.toLowerCase()) {
         case 'low':
-            lowIntensity();
+            results = lowIntensity();
             break;
         case 'medium':
-            medIntensity();
+            results = medIntensity();
             break;
         case 'high':
-            highIntensity();
+            results = highIntensity();
             break;
         case 'xtreme':
-            extremeIntensity();
+            results = extremeIntensity();
             break;
         default:
-            lowIntensity();
+            results = lowIntensity();
             break;
     }
+    return returnValue + `${results} INDIVIDUAL RESULTS FETCHED`;
 }
-
-
-
 
 
 function lowIntensity() {
-    callApi('scott');
+    return callApi('scott');
+
 }
 
 function medIntensity() {
-    callApi('scott');
-    callApi('john');
+    return callApi('scott') + callApi('john');
 }
 
 function highIntensity() {
-    callApi('scott');
-    callApi('john');
-    callApi('michael');
+    return callApi('scott') + callApi('john') + callApi('michael');
 }
 
 function extremeIntensity() {
-    callApi('scott');
-    callApi('john');
-    callApi('michael');
-    callApi('bill');
+    return callApi('scott') + callApi('john') + callApi('michael') + callApi('bill');
 }
 
 export function callApi(name) {
+    let results;
     axios.get(`https://www.ourcommons.ca/Members/en/search/xml?searchText=${name}&parliament=all`)
         .then( response => {
             const xmlString = response.data;
@@ -54,16 +50,13 @@ export function callApi(name) {
             parseString(xmlString, function (err, result) {
                 const data = JSON.parse(JSON.stringify(result));
                 const mps = data['ArrayOfMemberOfParliament']['MemberOfParliament'];
-                for(let i = 0; i < mps.length; i++) {
-                    console.log('=============================================================')
-                    console.log(`[ MP FIRST NAME ]: ${mps[i]['PersonOfficialFirstName']}`)
-                    console.log(`[ MP LAST NAME ]: ${mps[i]['PersonOfficialLastName']}`)
-                }
+                results = mps.length;
 
             });
         })
         .catch( error => {
             console.log('ERROR: ' + error );
         })
+    return results;
 
 }

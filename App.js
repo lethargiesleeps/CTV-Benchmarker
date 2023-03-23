@@ -1,29 +1,27 @@
 import {
   StyleSheet,
-  Text,
   SafeAreaView,
-  View,
-  StatusBar,
-  Button,
-  Alert,
+  Alert
 } from "react-native";
 import {useState, useEffect} from "react";
 import  Dropdown  from "./components/Dropdown";
 import * as BackgroundFetch from 'expo-background-fetch';
 import * as TaskManager from 'expo-task-manager';
 import { hocFetch, callApi} from "./Fetcher";
+import MainUI from "./components/MainUI";
+import Log from "./components/Log";
 
 //task name
 const BACKGROUND_FETCH_TASK = 'background-fetch';
 let intensityGlobal = 'Low';
+let logDataGlobal = [];
+let logPrefix = `[ ${new Date(Date.now()).toString()} ] `;;
 
 //task logic
 TaskManager.defineTask(BACKGROUND_FETCH_TASK, async () => {
   const now = Date.now();
-  console.log(`[ FETCH INITIATED: ${new Date(now).toString()} ]`);
-  hocFetch(intensityGlobal);
-
-
+  logDataGlobal.push(`${logPrefix}FETCH INITIATED`);
+  logDataGlobal.push(hocFetch(intensityGlobal));
   return BackgroundFetch.BackgroundFetchResult.NewData;
 });
 
@@ -46,6 +44,18 @@ export default function App() {
   const [status, setStatus] = useState(null); //status code of task, 3 is good
   const [ backgroundFrequency, setBackgroundFrequency ] = useState(15); //minimum frequency of task execution, cannot be lower than 15, will cause issues
   const [ intensity, setIntensity ] = useState(); //intensity of API call, not yet implemented
+  const [ logVisibe, setLogVisible ] = useState(false)
+  const [ logData, setLogData] = useState([]);
+
+  //Force updates log data to maintain state
+  function updateLogData() {
+    setLogData(logDataGlobal);
+  }
+
+  function clearLog() {
+    logDataGlobal = [];
+    updateLogData();
+  }
 
   //hook
   useEffect(() => {
@@ -58,14 +68,13 @@ export default function App() {
     const isRegistered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_FETCH_TASK);
     setStatus(status);
     setIsRegistered(isRegistered);
-    console.log("[ STATUS: " + status + " ]");
-    console.log("[ TASK REGISTERED: " + isRegistered + " ]");
+    logDataGlobal.push(`${logPrefix}STATUS (3=Good): ${status}`);
+    logDataGlobal.push(`${logPrefix}TASK REGISTERED: ${isRegistered}`);
+    updateLogData();
   };
 
   //Main button onPress equivalent
   const toggleFetchTask = async () => {
-    console.log(`[ FREQUENCY: ${backgroundFrequency} ]`);
-    console.log(`[ INTENSITY: ${intensity} ]`);
     //Make sure no bad parameters than can mess up fetch task
     if (backgroundFrequency !== undefined && intensity !== undefined) {
       //convert dropdown selection to numerical equivalent in minutes
@@ -74,14 +83,16 @@ export default function App() {
       //unregister task (stop it from running)
       if (isRegistered) {
         await unregisterBackgroundFetchAsync();
-        console.log("[ BACKGROUND FETCH TASK IS NOW UNREGISTERED ]")
+        logDataGlobal.push(`${logPrefix}BACKGROUND FETCH TASK IN NOW UNREGISTERED`);
       } 
       //register task (start the process)
       else {
         await registerBackgroundFetchAsync(interval);
-        console.log("[ BACKGROUND FETCH TASK IS NOW REGISTERED ]");
+        logDataGlobal.push(`${logPrefix}FREQUENCY: ${backgroundFrequency}`);
+        logDataGlobal.push(`${logPrefix}INTENSITY: ${intensity}`);
+        logDataGlobal.push(`${logPrefix}BACKGROUND FETCH TASK IS NOW REGISTERED`);
       }
-
+      setLogData(logDataGlobal);
     }
     //pseudo error handling
     else {
@@ -93,9 +104,19 @@ export default function App() {
     checkStatusAsync();
   };
 
-  function doTheThing() {
-    callApi();
+
+  function toggleLog() {
+    if(logVisibe)
+      setLogVisible(false)
+    else
+      setLogVisible(true)
   }
+
+  //For testing purposes only, stops app from starting/stopping background task for debugging purposes
+  function doTheThing() {
+    logDataGlobal.push("TEST");
+  }
+
   //frequency rate dropdown
   const frequencyDropdown = <Dropdown
     items={
@@ -125,41 +146,31 @@ export default function App() {
     onValueChange={(intensityValue) => {
       setIntensity(intensityValue);
       intensityGlobal = intensityValue;
-      console.log(`[ INTENSITY GLOBAL CHECK : ${intensityGlobal}]`);
     }
   }
   />
 
+  //main screen
+  let screen = <MainUI
+      dropdown1={frequencyDropdown}
+      dropdown2={intensityDropdown}
+      toggleFetchTask={toggleFetchTask}
+      toggleLog={toggleLog}
+      isRegistered={isRegistered}
+  />
+
+  if(logVisibe) {
+    screen = <Log
+        toggleLog={toggleLog}
+        logData={logData}
+        clearLog={clearLog}
+    />
+  }
+
   return (
     <SafeAreaView style={styles.rootDisplay}>
-
-      <View style={styles.titleContainer}>
-        <Text style={styles.titleText}>CanTrackVote Benchmarker</Text>
-        <View>
-          <Text>BG FETCH STATUS: {' '}
-            <Text style={{fontWeight: 'bold', color: 'white'}}>{status && BackgroundFetch.BackgroundFetchStatus[status]}</Text>
-          </Text>
-        </View>
-        
-        <View style={styles.dropDownsContainer}>
-          <View>
-            {frequencyDropdown}
-          </View>
-
-          <View>
-            {intensityDropdown}
-          </View> 
-        </View>
-        
-        <View style={styles.buttonContainer}>
-          <Button 
-            title={isRegistered ? 'Stop Background Fetch Task' : 'Start Background Fetch Task'} 
-            onPress={toggleFetchTask}
-            />
-        </View>
-      </View>
+      {screen}
     </SafeAreaView>
-  
   );
 }
 
@@ -167,29 +178,9 @@ const styles = StyleSheet.create({
 
   rootDisplay: {
     flex: 1,
-    marginTop: StatusBar.currentHeight + 150,
-    padding: 40
-  },
-  titleContainer: {
-    
-    justifyContent: 'center',
-    alignItems: 'center',
-    
-  },
-  titleText: {
-    fontSize: 24,
-    flexWrap: 'nowrap',
-    color: 'white'
-    
-  },
-  dropDownsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: 24
-  },
-  buttonContainer: {
-    padding: 24
+    padding: 12
   }
+
 });
 
 //Custom functions
