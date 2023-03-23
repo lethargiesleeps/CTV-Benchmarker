@@ -24,7 +24,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#fff"
-      }
+      },
+      "package": "com.lethargiesleeps.ctvbenchmarker"
     },
     "web": {
       "favicon": "./assets/favicon.png"

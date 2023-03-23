@@ -17,7 +17,6 @@
     "expo-task-manager": "~11.1.1",
     "react": "18.2.0",
     "react-native": "0.71.4",
-    "react-native-background-task": "^0.2.1",
     "react-native-xml2js": "^1.0.3"
   },
   "devDependencies": {
