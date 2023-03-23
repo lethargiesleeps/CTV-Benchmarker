@@ -21,6 +21,7 @@ let intensityGlobal = 'Low';
 TaskManager.defineTask(BACKGROUND_FETCH_TASK, async () => {
   const now = Date.now();
   console.log(`[ FETCH INITIATED: ${new Date(now).toString()} ]`);
+  hocFetch(intensityGlobal);
 
 
   return BackgroundFetch.BackgroundFetchResult.NewData;
@@ -153,7 +154,7 @@ export default function App() {
         <View style={styles.buttonContainer}>
           <Button 
             title={isRegistered ? 'Stop Background Fetch Task' : 'Start Background Fetch Task'} 
-            onPress={doTheThing}
+            onPress={toggleFetchTask}
             />
         </View>
       </View>

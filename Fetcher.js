@@ -1,5 +1,4 @@
 import axios from "axios";
-import parseString from 'react-native-xml2js';
 
 export function hocFetch(intensity) {
     switch (intensity.toLowerCase()) {
@@ -26,34 +25,45 @@ export function hocFetch(intensity) {
 
 
 function lowIntensity() {
-
+    callApi('scott');
 }
 
 function medIntensity() {
-
+    callApi('scott');
+    callApi('john');
 }
 
 function highIntensity() {
-
+    callApi('scott');
+    callApi('john');
+    callApi('michael');
 }
 
 function extremeIntensity() {
-
+    callApi('scott');
+    callApi('john');
+    callApi('michael');
+    callApi('bill');
 }
 
-export function callApi() {
-    axios.get('https://www.ourcommons.ca/Members/en/search/xml?searchText=scott&parliament=all')
+export function callApi(name) {
+    axios.get(`https://www.ourcommons.ca/Members/en/search/xml?searchText=${name}&parliament=all`)
         .then( response => {
             const xmlString = response.data;
             const parseString = require('react-native-xml2js').parseString;
             parseString(xmlString, function (err, result) {
                 const data = JSON.parse(JSON.stringify(result));
-                const values = data.ArrayOfMemberOfParliament;
+                const mps = data['ArrayOfMemberOfParliament']['MemberOfParliament'];
+                for(let i = 0; i < mps.length; i++) {
+                    console.log('=============================================================')
+                    console.log(`[ MP FIRST NAME ]: ${mps[i]['PersonOfficialFirstName']}`)
+                    console.log(`[ MP LAST NAME ]: ${mps[i]['PersonOfficialLastName']}`)
+                }
 
             });
         })
         .catch( error => {
-            console.log('ERROR3: ' + error );
+            console.log('ERROR: ' + error );
         })
 
 }
