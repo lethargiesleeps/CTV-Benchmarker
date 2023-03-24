@@ -51,6 +51,7 @@ export function callApi(name) {
                 const data = JSON.parse(JSON.stringify(result));
                 const mps = data['ArrayOfMemberOfParliament']['MemberOfParliament'];
                 results = mps.length;
+                console.log(results)
 
             });
         })
