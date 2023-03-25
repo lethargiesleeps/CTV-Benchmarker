@@ -15,17 +15,28 @@ import Log from "./components/Log";
 
 //task name
 const BACKGROUND_FETCH_TASK = 'background-fetch';
-const LOG_STORAGE_KEY = 'logData'
-let intensityGlobal = 'Low';
+const LOG_STORAGE_KEY = 'logData';
+const INTENSITY_STORAGE_KEY = 'isk';
 let logDataGlobal = [];
 let logPrefix = `[ ${new Date(Date.now()).toString()} ] `;;
 
 
 //task logic
 TaskManager.defineTask(BACKGROUND_FETCH_TASK, async () => {
-  logDataGlobal.push(`${logPrefix}FETCH INITIATED`);
-  logDataGlobal.push(hocFetch(intensityGlobal));
-  await AsyncStorage.setItem(LOG_STORAGE_KEY, JSON.stringify(logDataGlobal))
+
+  const initMessage = `${logPrefix}FETCH INITIATED`;
+  let intensity;
+  await AsyncStorage.getItem(INTENSITY_STORAGE_KEY).then((value) => {
+    intensity = JSON.parse(value)[0];
+  }).catch((e) => {
+    console.log(`[ERROR] ${e}`);
+  })
+
+  const fetchMessage = (intensity === '') ? hocFetch('low') : hocFetch(intensity);
+  logDataGlobal.push(initMessage);
+  logDataGlobal.push(fetchMessage);
+  await AsyncStorage.mergeItem(LOG_STORAGE_KEY, JSON.stringify(initMessage));
+  await AsyncStorage.mergeItem(LOG_STORAGE_KEY, JSON.stringify(fetchMessage));
   return BackgroundFetch.BackgroundFetchResult.NewData;
 });
 
@@ -49,12 +60,7 @@ export default function App() {
   const [ backgroundFrequency, setBackgroundFrequency ] = useState(15); //minimum frequency of task execution, cannot be lower than 15, will cause issues
   const [ intensity, setIntensity ] = useState(); //intensity of API call, not yet implemented
   const [ logVisible, setLogVisible ] = useState(false);
-  const [ logData, setLogData] = useState(AsyncStorage.getItem(LOG_STORAGE_KEY).then((value) => {
-    logDataGlobal = JSON.parse(value);
-    setLogData(logDataGlobal);
-  }).catch((e) => {
-    console.log('[ ERROR ]: ' + e);
-  }));
+  const [ logData, setLogData] = useState([]);
 
   async function clearLog() {
     logDataGlobal = [];
@@ -95,11 +101,13 @@ export default function App() {
       //register task (start the process)
       else {
         await registerBackgroundFetchAsync(interval);
+        let intensityObject = [intensity];
         logDataGlobal.push(`${logPrefix}FREQUENCY: ${backgroundFrequency}`);
         logDataGlobal.push(`${logPrefix}INTENSITY: ${intensity}`);
         logDataGlobal.push(`${logPrefix}BACKGROUND FETCH TASK IS NOW REGISTERED`);
         setLogData(logDataGlobal);
         await AsyncStorage.setItem(LOG_STORAGE_KEY, JSON.stringify(logDataGlobal));
+        await AsyncStorage.setItem(INTENSITY_STORAGE_KEY, JSON.stringify(intensityObject));
       }
     }
     //pseudo error handling
@@ -117,6 +125,13 @@ export default function App() {
     if(logVisible)
       setLogVisible(false)
     else {
+      logDataGlobal = AsyncStorage.getItem(LOG_STORAGE_KEY).then((value) => {
+        logDataGlobal = JSON.parse(value);
+        setLogData(logDataGlobal);
+      }).catch((e) => {
+        console.log('[ ERROR ]: ' + e);
+      });
+      setLogData(logDataGlobal);
       setLogVisible(true);
     }
 
@@ -124,9 +139,13 @@ export default function App() {
 
   //For testing purposes only, stops app from starting/stopping background task for debugging purposes
   async function doTheThing() {
-    logDataGlobal.push(hocFetch(intensityGlobal));
-    setLogData(logDataGlobal);
-    await AsyncStorage.setItem(LOG_STORAGE_KEY, JSON.stringify(logDataGlobal));
+    let intensityObject = ['medium'];
+    let retrieval;
+    await AsyncStorage.setItem(INTENSITY_STORAGE_KEY, JSON.stringify(intensityObject));
+    await AsyncStorage.getItem(INTENSITY_STORAGE_KEY).then((value) => {
+      retrieval = JSON.parse(value)[0];
+    }).catch((e) => { console.log(e)})
+    console.log(retrieval);
   }
 
   //frequency rate dropdown
@@ -157,7 +176,7 @@ export default function App() {
     label={'Select Call Intensity'}
     onValueChange={(intensityValue) => {
       setIntensity(intensityValue);
-      intensityGlobal = intensityValue;
+
     }
   }
   />
