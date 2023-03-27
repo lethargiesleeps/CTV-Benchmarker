@@ -40,6 +40,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginTop: StatusBar.currentHeight + 150,
 
+
     },
     titleText: {
         fontSize: 24,
@@ -50,7 +51,7 @@ const styles = StyleSheet.create({
     dropDownsContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        padding: 24
+        marginHorizontal: 55
     },
     buttonContainer: {
         padding: 24,

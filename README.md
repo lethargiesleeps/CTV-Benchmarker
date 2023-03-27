@@ -3,6 +3,13 @@
 This app runs a variety of profile tests.
 
 ## Background Fetch Task
+
+### Intensity:
+- Low (Fetch 1 MP and 1 Bill per time interval)
+- Medium (Fetch 2 MPs and 2 Bills per time interval)
+- High (Fetch 4 MPs and 4 Bills per time interval)
+- Extreme (Fetch 8 MPs and 8 Bills per time interval)
+- 
 ### Things to note:
 
 - Background tasks can only run at a minimum interval of 15 minutes.

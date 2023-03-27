@@ -4,7 +4,6 @@ function Log({logData, toggleLog, clearLog}) {
 
     return (
         <View style={styles.root}>
-            <Text style={styles.header}>Log does not persist on app termination</Text>
             <View style={styles.buttonContainer}>
                 <View style={styles.button}>
                     <Button title={'Close Log'} onPress={toggleLog}/>
@@ -13,15 +12,11 @@ function Log({logData, toggleLog, clearLog}) {
                     <Button title={'Clear Log'} onPress={clearLog}/>
                 </View>
             </View>
-
-            <View>
-                <FlatList data={logData} renderItem={(itemData) => {
-                    return (
-                        <Text style={styles.logItem}>{itemData.item}</Text>
-                    );
-                }} />
-            </View>
-
+            <FlatList data={logData} renderItem={(itemData) => {
+                return (
+                    <Text style={styles.logItem}>{itemData.item}</Text>
+                );
+            }} />
         </View>
     )
 }

@@ -1,10 +1,12 @@
 import {
   StyleSheet,
   SafeAreaView,
-  Alert
+  Alert,
 } from "react-native";
+
 import {useState, useEffect} from "react";
 import  Dropdown  from "./components/Dropdown";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as BackgroundFetch from 'expo-background-fetch';
 import * as TaskManager from 'expo-task-manager';
 import { hocFetch, callApi} from "./Fetcher";
@@ -13,15 +15,36 @@ import Log from "./components/Log";
 
 //task name
 const BACKGROUND_FETCH_TASK = 'background-fetch';
-let intensityGlobal = 'Low';
+const LOG_STORAGE_KEY = 'logData';
+const INTENSITY_STORAGE_KEY = 'isk';
 let logDataGlobal = [];
 let logPrefix = `[ ${new Date(Date.now()).toString()} ] `;;
 
+
 //task logic
 TaskManager.defineTask(BACKGROUND_FETCH_TASK, async () => {
-  const now = Date.now();
-  logDataGlobal.push(`${logPrefix}FETCH INITIATED`);
-  logDataGlobal.push(hocFetch(intensityGlobal));
+
+  const initMessage = `${logPrefix}FETCH INITIATED`;
+  let intensity;
+  let logs = [];
+  await AsyncStorage.getItem(INTENSITY_STORAGE_KEY).then((value) => {
+    intensity = JSON.parse(value)[0];
+  }).catch((e) => {
+    console.log(`[ERROR] ${e}`);
+  })
+
+  await AsyncStorage.getItem(LOG_STORAGE_KEY).then((value) => {
+    logs = JSON.parse(value);
+  }).catch((e) => {
+    console.log(`[ ERROR ] ${e}`)
+  })
+
+  const fetchMessage = (intensity === '') ? hocFetch('low') : hocFetch(intensity);
+
+  logs.push(initMessage); //might be unnesceary
+  logs.push(fetchMessage); //might be unnesceary
+  await AsyncStorage.setItem(LOG_STORAGE_KEY, JSON.stringify(logs));
+  //await AsyncStorage.mergeItem(LOG_STORAGE_KEY, JSON.stringify(fetchMessage));
   return BackgroundFetch.BackgroundFetchResult.NewData;
 });
 
@@ -44,17 +67,13 @@ export default function App() {
   const [status, setStatus] = useState(null); //status code of task, 3 is good
   const [ backgroundFrequency, setBackgroundFrequency ] = useState(15); //minimum frequency of task execution, cannot be lower than 15, will cause issues
   const [ intensity, setIntensity ] = useState(); //intensity of API call, not yet implemented
-  const [ logVisibe, setLogVisible ] = useState(false)
+  const [ logVisible, setLogVisible ] = useState(false);
   const [ logData, setLogData] = useState([]);
 
-  //Force updates log data to maintain state
-  function updateLogData() {
-    setLogData(logDataGlobal);
-  }
-
-  function clearLog() {
+  async function clearLog() {
     logDataGlobal = [];
-    updateLogData();
+    await AsyncStorage.setItem(LOG_STORAGE_KEY, JSON.stringify(logDataGlobal));
+    setLogData(logDataGlobal);
   }
 
   //hook
@@ -70,7 +89,7 @@ export default function App() {
     setIsRegistered(isRegistered);
     logDataGlobal.push(`${logPrefix}STATUS (3=Good): ${status}`);
     logDataGlobal.push(`${logPrefix}TASK REGISTERED: ${isRegistered}`);
-    updateLogData();
+    setLogData(logDataGlobal);
   };
 
   //Main button onPress equivalent
@@ -84,15 +103,20 @@ export default function App() {
       if (isRegistered) {
         await unregisterBackgroundFetchAsync();
         logDataGlobal.push(`${logPrefix}BACKGROUND FETCH TASK IN NOW UNREGISTERED`);
+        setLogData(logDataGlobal);
+        await AsyncStorage.setItem(LOG_STORAGE_KEY, JSON.stringify(logDataGlobal));
       } 
       //register task (start the process)
       else {
         await registerBackgroundFetchAsync(interval);
+        let intensityObject = [intensity];
         logDataGlobal.push(`${logPrefix}FREQUENCY: ${backgroundFrequency}`);
         logDataGlobal.push(`${logPrefix}INTENSITY: ${intensity}`);
         logDataGlobal.push(`${logPrefix}BACKGROUND FETCH TASK IS NOW REGISTERED`);
+        setLogData(logDataGlobal);
+        await AsyncStorage.setItem(LOG_STORAGE_KEY, JSON.stringify(logDataGlobal));
+        await AsyncStorage.setItem(INTENSITY_STORAGE_KEY, JSON.stringify(intensityObject));
       }
-      setLogData(logDataGlobal);
     }
     //pseudo error handling
     else {
@@ -101,20 +125,50 @@ export default function App() {
     }
     
     //Check status each time process is started or stopped
-    checkStatusAsync();
+    await checkStatusAsync();
   };
 
 
-  function toggleLog() {
-    if(logVisibe)
+  async function toggleLog() {
+    if(logVisible)
       setLogVisible(false)
-    else
-      setLogVisible(true)
+    else {
+      logDataGlobal = AsyncStorage.getItem(LOG_STORAGE_KEY).then((value) => {
+        logDataGlobal = JSON.parse(value);
+        setLogData(logDataGlobal);
+      }).catch((e) => {
+        console.log('[ ERROR ]: ' + e);
+      });
+      setLogData(logDataGlobal);
+      setLogVisible(true);
+    }
+
   }
 
   //For testing purposes only, stops app from starting/stopping background task for debugging purposes
-  function doTheThing() {
-    logDataGlobal.push("TEST");
+  async function doTheThing() {
+    const initMessage = `${logPrefix}FETCH INITIATED`;
+    let intensity;
+    let logs = [];
+    await AsyncStorage.getItem(INTENSITY_STORAGE_KEY).then((value) => {
+      intensity = JSON.parse(value)[0];
+    }).catch((e) => {
+      console.log(`[ERROR] ${e}`);
+    })
+
+    await AsyncStorage.getItem(LOG_STORAGE_KEY).then((value) => {
+      logs = JSON.parse(value);
+    }).catch((e) => {
+      console.log(`[ ERROR ] ${e}`)
+    })
+
+    const fetchMessage = (intensity === '') ? hocFetch('low') : hocFetch(intensity);
+
+    logs.push(initMessage); //might be unnesceary
+    logs.push(fetchMessage); //might be unnesceary
+    console.log(intensity);
+    logs.forEach((log) => {console.log(log)});
+    await AsyncStorage.setItem(LOG_STORAGE_KEY, JSON.stringify(logs));
   }
 
   //frequency rate dropdown
@@ -145,7 +199,7 @@ export default function App() {
     label={'Select Call Intensity'}
     onValueChange={(intensityValue) => {
       setIntensity(intensityValue);
-      intensityGlobal = intensityValue;
+
     }
   }
   />
@@ -159,7 +213,7 @@ export default function App() {
       isRegistered={isRegistered}
   />
 
-  if(logVisibe) {
+  if(logVisible) {
     screen = <Log
         toggleLog={toggleLog}
         logData={logData}
@@ -178,7 +232,7 @@ const styles = StyleSheet.create({
 
   rootDisplay: {
     flex: 1,
-    padding: 12
+    padding: 24
   }
 
 });

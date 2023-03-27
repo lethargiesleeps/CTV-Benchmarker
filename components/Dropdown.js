@@ -49,10 +49,10 @@ export default Dropdown;
 const styles = StyleSheet.create({
     container: {
         backgroundColor: '#1a84db',
-        paddingHorizontal: 24,
-        paddingVertical: 16,
+        paddingHorizontal: 8,
+        paddingVertical: 12,
         marginVertical: 24,
-        marginHorizontal: 8
+        marginHorizontal: 16
     },
     optionsContainer: {
         backgroundColor: '#1a84db',
