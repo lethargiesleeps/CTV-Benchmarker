@@ -26,17 +26,25 @@ TaskManager.defineTask(BACKGROUND_FETCH_TASK, async () => {
 
   const initMessage = `${logPrefix}FETCH INITIATED`;
   let intensity;
+  let logs = [];
   await AsyncStorage.getItem(INTENSITY_STORAGE_KEY).then((value) => {
     intensity = JSON.parse(value)[0];
   }).catch((e) => {
     console.log(`[ERROR] ${e}`);
   })
 
+  await AsyncStorage.getItem(LOG_STORAGE_KEY).then((value) => {
+    logs = JSON.parse(value);
+  }).catch((e) => {
+    console.log(`[ ERROR ] ${e}`)
+  })
+
   const fetchMessage = (intensity === '') ? hocFetch('low') : hocFetch(intensity);
-  logDataGlobal.push(initMessage);
-  logDataGlobal.push(fetchMessage);
-  await AsyncStorage.mergeItem(LOG_STORAGE_KEY, JSON.stringify(initMessage));
-  await AsyncStorage.mergeItem(LOG_STORAGE_KEY, JSON.stringify(fetchMessage));
+
+  logs.push(initMessage); //might be unnesceary
+  logs.push(fetchMessage); //might be unnesceary
+  await AsyncStorage.setItem(LOG_STORAGE_KEY, JSON.stringify(logs));
+  //await AsyncStorage.mergeItem(LOG_STORAGE_KEY, JSON.stringify(fetchMessage));
   return BackgroundFetch.BackgroundFetchResult.NewData;
 });
 
@@ -139,13 +147,28 @@ export default function App() {
 
   //For testing purposes only, stops app from starting/stopping background task for debugging purposes
   async function doTheThing() {
-    let intensityObject = ['medium'];
-    let retrieval;
-    await AsyncStorage.setItem(INTENSITY_STORAGE_KEY, JSON.stringify(intensityObject));
+    const initMessage = `${logPrefix}FETCH INITIATED`;
+    let intensity;
+    let logs = [];
     await AsyncStorage.getItem(INTENSITY_STORAGE_KEY).then((value) => {
-      retrieval = JSON.parse(value)[0];
-    }).catch((e) => { console.log(e)})
-    console.log(retrieval);
+      intensity = JSON.parse(value)[0];
+    }).catch((e) => {
+      console.log(`[ERROR] ${e}`);
+    })
+
+    await AsyncStorage.getItem(LOG_STORAGE_KEY).then((value) => {
+      logs = JSON.parse(value);
+    }).catch((e) => {
+      console.log(`[ ERROR ] ${e}`)
+    })
+
+    const fetchMessage = (intensity === '') ? hocFetch('low') : hocFetch(intensity);
+
+    logs.push(initMessage); //might be unnesceary
+    logs.push(fetchMessage); //might be unnesceary
+    console.log(intensity);
+    logs.forEach((log) => {console.log(log)});
+    await AsyncStorage.setItem(LOG_STORAGE_KEY, JSON.stringify(logs));
   }
 
   //frequency rate dropdown
@@ -185,7 +208,7 @@ export default function App() {
   let screen = <MainUI
       dropdown1={frequencyDropdown}
       dropdown2={intensityDropdown}
-      toggleFetchTask={doTheThing}
+      toggleFetchTask={toggleFetchTask}
       toggleLog={toggleLog}
       isRegistered={isRegistered}
   />
