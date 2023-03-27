@@ -18,25 +18,24 @@ const BACKGROUND_FETCH_TASK = 'background-fetch';
 const LOG_STORAGE_KEY = 'logData';
 const INTENSITY_STORAGE_KEY = 'isk';
 let logDataGlobal = [];
-let logPrefix = `[ ${new Date(Date.now()).toString()} ] `;;
+let logPrefix = `[ ${new Date(Date.now()).toString()} ] `;
 
 
 //task logic
 TaskManager.defineTask(BACKGROUND_FETCH_TASK, async () => {
-
   const initMessage = `${logPrefix}FETCH INITIATED`;
   let intensity;
   let logs = [];
   await AsyncStorage.getItem(INTENSITY_STORAGE_KEY).then((value) => {
     intensity = JSON.parse(value)[0];
   }).catch((e) => {
-    console.log(`[ERROR] ${e}`);
+    logs.push(`[ERROR] ${e}`);
   })
 
   await AsyncStorage.getItem(LOG_STORAGE_KEY).then((value) => {
     logs = JSON.parse(value);
   }).catch((e) => {
-    console.log(`[ ERROR ] ${e}`)
+    logs.push(`[ERROR] ${e}`)
   })
 
   const fetchMessage = (intensity === '') ? hocFetch('low') : hocFetch(intensity);
@@ -44,7 +43,6 @@ TaskManager.defineTask(BACKGROUND_FETCH_TASK, async () => {
   logs.push(initMessage); //might be unnesceary
   logs.push(fetchMessage); //might be unnesceary
   await AsyncStorage.setItem(LOG_STORAGE_KEY, JSON.stringify(logs));
-  //await AsyncStorage.mergeItem(LOG_STORAGE_KEY, JSON.stringify(fetchMessage));
   return BackgroundFetch.BackgroundFetchResult.NewData;
 });
 
@@ -137,7 +135,7 @@ export default function App() {
         logDataGlobal = JSON.parse(value);
         setLogData(logDataGlobal);
       }).catch((e) => {
-        console.log('[ ERROR ]: ' + e);
+        logDataGlobal.push(`[ERROR] ${e}`)
       });
       setLogData(logDataGlobal);
       setLogVisible(true);
@@ -147,28 +145,7 @@ export default function App() {
 
   //For testing purposes only, stops app from starting/stopping background task for debugging purposes
   async function doTheThing() {
-    const initMessage = `${logPrefix}FETCH INITIATED`;
-    let intensity;
-    let logs = [];
-    await AsyncStorage.getItem(INTENSITY_STORAGE_KEY).then((value) => {
-      intensity = JSON.parse(value)[0];
-    }).catch((e) => {
-      console.log(`[ERROR] ${e}`);
-    })
 
-    await AsyncStorage.getItem(LOG_STORAGE_KEY).then((value) => {
-      logs = JSON.parse(value);
-    }).catch((e) => {
-      console.log(`[ ERROR ] ${e}`)
-    })
-
-    const fetchMessage = (intensity === '') ? hocFetch('low') : hocFetch(intensity);
-
-    logs.push(initMessage); //might be unnesceary
-    logs.push(fetchMessage); //might be unnesceary
-    console.log(intensity);
-    logs.forEach((log) => {console.log(log)});
-    await AsyncStorage.setItem(LOG_STORAGE_KEY, JSON.stringify(logs));
   }
 
   //frequency rate dropdown
